@@ -1,0 +1,206 @@
+import React, { useMemo, useState } from "react";
+import { Sankey, Tooltip, ResponsiveContainer } from "recharts";
+
+// --- Vstupné údaje (USD mil.) – Q2 FY2025 (štvrťrok končiaci 29.3.2025)
+// Zdroj: Form 10-Q (Segment Information) + poznámky o akciách a buybackoch
+const raw = {
+  quarterLabel: "Q2 FY2025 (quarter ended Mar 29, 2025)",
+  segments: [
+    { key: "Entertainment", revenue: 10682, opIncome: 1258 },
+    { key: "Sports", revenue: 4534, opIncome: 687 },
+    { key: "Experiences", revenue: 8889, opIncome: 2491 },
+  ],
+  eliminations: 484, // intersegment eliminations (net out of consolidated revenue)
+  totalSegRev: 23621, // after eliminations
+  totalSegOpInc: 4436,
+  shares: {
+    dilutedAvg: 1814, // mil. akcií (diluted WAVG)
+    dilutedAvgPY: 1834, // mil. akcií v Q2 FY2024
+    outstandingAtApr30: 1797.746311, // mil. k 30.4.2025 (zverejnené v 10-Q)
+  },
+  repurchases: {
+    qtrShares: 9.4, // mil.
+    qtrSpend: 1000, // USD mil.
+    ytdShares: 16.5, // mil.
+    ytdSpend: 1785, // USD mil.
+    authRemainingShares: 355, // mil.
+  },
+  dividends: {
+    jan2025: 0.50,
+    jul2025: 0.50,
+  },
+};
+
+function number(n: number) {
+  return new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(n);
+}
+
+function percent(n: number) {
+  return (n * 100).toFixed(2) + "%";
+}
+
+export default function App() {
+  const [units, setUnits] = useState<"usd" | "eur">("usd");
+  const fx = 1; // jednoduché prepínanie – v prípade potreby doplniť FX
+
+  const rows = useMemo(() => {
+    return raw.segments.map((s) => {
+      const opex = s.revenue - s.opIncome;
+      const margin = s.opIncome / s.revenue;
+      return { ...s, opex, margin };
+    });
+  }, []);
+
+  const sankey = useMemo(() => {
+    // Nodes: pre každý segment (Revenue), plus Opex a OpIncome ciele
+    const nodes: { name: string }[] = [];
+    const links: { source: number; target: number; value: number }[] = [];
+
+    rows.forEach((r) => {
+      const src = nodes.push({ name: `${r.key} revenue` }) - 1;
+      const tgtOpex = nodes.push({ name: `${r.key} operating costs` }) - 1;
+      const tgtOI = nodes.push({ name: `${r.key} operating income` }) - 1;
+      links.push({ source: src, target: tgtOpex, value: r.opex });
+      links.push({ source: src, target: tgtOI, value: r.opIncome });
+    });
+
+    return { nodes, links };
+  }, [rows]);
+
+  const total = useMemo(() => {
+    const revGross = rows.reduce((a, b) => a + b.revenue, 0);
+    const opex = rows.reduce((a, b) => a + b.opex, 0);
+    const oi = rows.reduce((a, b) => a + b.opIncome, 0);
+    const margin = raw.totalSegOpInc / raw.totalSegRev; // po elimináciách
+    return { revGross, opex, oi, margin };
+  }, [rows]);
+
+  return (
+    <div className="min-h-screen p-6 md:p-10 space-y-6 bg-slate-50 text-slate-900">
+      <header className="flex flex-col md:flex-row md:items-end md:justify-between gap-2">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold">Disney – Q2 FY2025 finančný prehľad</h1>
+          <p className="text-sm opacity-70">{raw.quarterLabel}. Čísla v USD mil.</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-sm">Zobraziť v</span>
+          <button
+            className={`px-3 py-1 rounded-full border ${
+              units === "usd" ? "bg-white" : "bg-slate-200"
+            }`}
+            onClick={() => setUnits("usd")}
+          >
+            USD
+          </button>
+          <button
+            className={`px-3 py-1 rounded-full border ${
+              units === "eur" ? "bg-white" : "bg-slate-200"
+            } opacity-50 cursor-not-allowed`}
+            title="FX konverziu môžete doplniť podľa potreby"
+          >
+            EUR
+          </button>
+        </div>
+      </header>
+
+      {/* KPI karty */}
+      <section className="grid md:grid-cols-4 gap-4">
+        <div className="bg-white rounded-2xl shadow p-4">
+          <div className="text-xs opacity-60">Segment revenues (net of eliminations)</div>
+          <div className="text-2xl font-semibold">${number(raw.totalSegRev)}</div>
+        </div>
+        <div className="bg-white rounded-2xl shadow p-4">
+          <div className="text-xs opacity-60">Segment operating income</div>
+          <div className="text-2xl font-semibold">${number(raw.totalSegOpInc)}</div>
+        </div>
+        <div className="bg-white rounded-2xl shadow p-4">
+          <div className="text-xs opacity-60">Total segment margin</div>
+          <div className="text-2xl font-semibold">{percent(raw.totalSegOpInc / raw.totalSegRev)}</div>
+        </div>
+        <div className="bg-white rounded-2xl shadow p-4">
+          <div className="text-xs opacity-60">Eliminations (intersegment)</div>
+          <div className="text-2xl font-semibold">-${number(raw.eliminations)}</div>
+        </div>
+      </section>
+
+      {/* Sankey diagram */}
+      <section className="bg-white rounded-2xl shadow p-4">
+        <h2 className="text-lg font-semibold mb-2">Tok príjmov → náklady vs. prevádzkový zisk (Sankey)</h2>
+        <div className="w-full h-[420px]">
+          <ResponsiveContainer>
+            <Sankey
+              width={900}
+              height={420}
+              data={sankey}
+              nodePadding={30}
+              margin={{ left: 10, right: 10, top: 10, bottom: 10 }}
+            >
+              <Tooltip />
+            </Sankey>
+          </ResponsiveContainer>
+        </div>
+        <p className="text-xs opacity-60 mt-2">Pozn.: Segmentové tržby obsahujú intersegmenty; konsolidované tržby sú po elimináciách.</p>
+      </section>
+
+      {/* Tabuľka segmentov */}
+      <section className="bg-white rounded-2xl shadow p-4">
+        <h2 className="text-lg font-semibold mb-3">Segmenty – tabuľka (USD mil.)</h2>
+        <div className="overflow-auto">
+          <table className="min-w-full text-sm">
+            <thead>
+              <tr className="text-left border-b">
+                <th className="py-2 pr-4">Segment</th>
+                <th className="py-2 pr-4">Tržby</th>
+                <th className="py-2 pr-4">Prevádzkové náklady</th>
+                <th className="py-2 pr-4">Prevádzkový zisk</th>
+                <th className="py-2 pr-4">Marža</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.key} className="border-b">
+                  <td className="py-1 pr-4 font-medium">{r.key}</td>
+                  <td className="py-1 pr-4">${number(r.revenue)}</td>
+                  <td className="py-1 pr-4">${number(r.opex)}</td>
+                  <td className="py-1 pr-4">${number(r.opIncome)}</td>
+                  <td className="py-1 pr-4">{percent(r.margin)}</td>
+                </tr>
+              ))}
+              <tr className="font-semibold">
+                <td className="py-1 pr-4">Spolu (po elimináciách)</td>
+                <td className="py-1 pr-4">${number(raw.totalSegRev)}</td>
+                <td className="py-1 pr-4">${number(rows.reduce((a,b)=>a+b.opex,0))}</td>
+                <td className="py-1 pr-4">${number(raw.totalSegOpInc)}</td>
+                <td className="py-1 pr-4">{percent(raw.totalSegOpInc/raw.totalSegRev)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      {/* Akcie a návrat kapitálu */}
+      <section className="grid md:grid-cols-3 gap-4">
+        <div className="bg-white rounded-2xl shadow p-4">
+          <h3 className="font-semibold mb-1">Buybacky</h3>
+          <p className="text-sm">V Q2 odkúpených ~{raw.repurchases.qtrShares} mil. akcií za ${number(raw.repurchases.qtrSpend)} mil.</p>
+          <p className="text-sm">YTD odkúpené ~{raw.repurchases.ytdShares} mil. za ${number(raw.repurchases.ytdSpend)} mil.</p>
+          <p className="text-xs opacity-60 mt-1">Zostávajúca autorizácia: ~{number(raw.repurchases.authRemainingShares)} mil. akcií.</p>
+        </div>
+        <div className="bg-white rounded-2xl shadow p-4">
+          <h3 className="font-semibold mb-1">Počet akcií</h3>
+          <p className="text-sm">Diluted WAVG: {raw.shares.dilutedAvg} mil. (Q2), {raw.shares.dilutedAvgPY} mil. (Q2 FY2024)</p>
+          <p className="text-sm">V obehu k 30.4.2025: ~{raw.shares.outstandingAtApr30.toFixed(3)} mil.</p>
+        </div>
+        <div className="bg-white rounded-2xl shadow p-4">
+          <h3 className="font-semibold mb-1">Dividendy</h3>
+          <p className="text-sm">Vyplatené 16.1.2025: ${raw.dividends.jan2025.toFixed(2)} / akciu</p>
+          <p className="text-sm">Očakávané 23.7.2025: ${raw.dividends.jul2025.toFixed(2)} / akciu</p>
+        </div>
+      </section>
+
+      <footer className="text-xs opacity-60">
+        Tip: Kliknite pravým na graf → Uložiť ako obrázok (podľa prehliadača), alebo skopírujte tabuľky do Excelu.
+      </footer>
+    </div>
+  );
+}
