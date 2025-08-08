@@ -11,8 +11,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Chosen Palette: Warm Harmony -->
-    <!-- Application Structure Plan: A multi-section, top-down narrative structure was chosen. It starts with high-level takeaways and the main Sankey diagram to provide an immediate overview of the financial flow. It then allows users to "drill down" into thematic sections for each business segment (Entertainment, Experiences, Sports) using an interactive tab system. This structure guides the user from the general (the full corporate story) to the specific (segment performance), making the complex report digestible. This is more effective for understanding than just presenting a single diagram, as it pairs quantitative data with the crucial qualitative insights from the report. -->
-    <!-- Visualization & Content Choices: 1. **Sankey Diagram (Plotly.js):** Goal: Show relationships/flow. This is the central request and the best tool to visualize the flow of money from revenues through costs to profit. Interaction: Hover tooltips show precise values. Justification: Directly answers the user's primary need. 2. **Bar Charts (Chart.js):** Goal: Compare components. Used within each segment's "deep dive" section to break down revenue and operating income sources (e.g., DTC vs. Linear Networks). Interaction: Standard Chart.js tooltips. Justification: Provides a clear, simple visual comparison that's easier to grasp than a table of numbers. 3. **Interactive Tabs (HTML/CSS/JS):** Goal: Organize content. Used to switch between the detailed analysis of the three main segments. Interaction: Click to reveal content. Justification: Prevents overwhelming the user with information by presenting one detailed section at a time, creating a clean and focused user experience. -->
+    <!-- Application Structure Plan: A multi-section, top-down narrative structure was chosen. It starts with high-level takeaways and the main Sankey diagram to provide an immediate overview of the financial flow. It then allows users to "drill down" into thematic sections for each business segment (Entertainment, Experiences, Sports) using an interactive tab system. A new section with conference call insights is added to provide deeper strategic context. This structure guides the user from general to specific, making the complex report digestible. -->
+    <!-- Visualization & Content Choices: 1. **Sankey Diagram (Plotly.js):** Goal: Show relationships/flow. This is the central request and the best tool to visualize the flow of money from revenues through costs to profit. Interaction: Hover tooltips show precise values. Justification: Directly answers the user's primary need. 2. **Bar Charts (Chart.js):** Goal: Compare components. Used within each segment's "deep dive" section to break down revenue and operating income sources. Interaction: Standard Chart.js tooltips. Justification: Provides a clear, simple visual comparison. 3. **Interactive Tabs (HTML/CSS/JS):** Goal: Organize content. Used to switch between the detailed analysis of the three main segments. Interaction: Click to reveal content. Justification: Prevents overwhelming the user with information by presenting one detailed section at a time. -->
     <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
     <style>
         body {
@@ -47,6 +47,11 @@
         .kpi-card:hover {
             transform: translateY(-4px);
             box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.07), 0 4px 6px -4px rgb(0 0 0 / 0.07);
+        }
+        .qa-item {
+            border-left: 3px solid #A57C5A;
+            padding-left: 1.5rem;
+            margin-bottom: 1.5rem;
         }
     </style>
 </head>
@@ -133,7 +138,7 @@
             <div id="sankeyChartContainer" class="w-full h-[500px] md:h-[600px]"></div>
         </section>
 
-        <section id="deep-dive">
+        <section id="deep-dive" class="mb-12">
             <h2 class="text-2xl font-bold text-center mb-8">Hĺbková analýza segmentov</h2>
             
             <div class="border-b border-gray-200 mb-8">
@@ -232,6 +237,46 @@
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="conference-call" class="bg-white p-6 md:p-8 rounded-lg shadow-md mb-12">
+            <h2 class="text-2xl font-bold text-center mb-8">Postrehy z konferenčného hovoru</h2>
+            <div class="max-w-3xl mx-auto">
+                <div class="qa-item">
+                    <h3 class="font-bold text-lg mb-2">Aká je budúcnosť ESPN a prečo je stratégia DTC (Direct-to-Consumer) taká dôležitá?</h3>
+                    <p class="text-gray-700">Manažment potvrdil, že agresívne pripravujú spustenie samostatnej streamovacej služby ESPN. Dôvod je jasný z finančných výsledkov: náklady na športové práva rastú rýchlejšie ako príjmy z reklamy a káblových poplatkov. Nová DTC služba má vytvoriť tretí, vysokomaržový zdroj príjmov (predplatné), ktorý pomôže ospravedlniť obrovské investície do práv a obnoviť ziskovosť segmentu.</p>
+                </div>
+                <div class="qa-item">
+                    <h3 class="font-bold text-lg mb-2">Čo presne spôsobilo obrat v ziskovosti streamingu (DTC)?</h3>
+                    <p class="text-gray-700">Nebol to len rast počtu predplatiteľov. Kľúčová bola kombinácia viacerých faktorov: cielené zvýšenie cien, zavedenie lacnejších úrovní predplatného s reklamou (ktoré prilákali nových zákazníkov) a najmä prvé efekty z opatrení proti zdieľaniu hesiel. To signalizuje posun od stratégie "rast za každú cenu" k stratégii "ziskovej monetizácie" existujúcej používateľskej základne.</p>
+                </div>
+                <div class="qa-item">
+                    <h3 class="font-bold text-lg mb-2">Prečo je výkonnosť segmentu Experiences taká závislá od USA?</h3>
+                    <p class="text-gray-700">Výsledky jasne ukázali, že kým domáce parky a zážitky prekvitali vďaka silnému dopytu amerických spotrebiteľov, medzinárodné parky (najmä v Číne) čelili poklesu návštevnosti a vyšším nákladom. To odhaľuje strategické riziko: celková ziskovosť Disney je momentálne silne závislá od zdravia americkej ekonomiky. Aj preto sa v hovore spomínali úvahy o diverzifikácii, napríklad možnou expanziou na nové trhy ako Blízky východ.</p>
+                </div>
+                 <div class="qa-item">
+                    <h3 class="font-bold text-lg mb-2">Aké sú ďalšie zaujímavé faktory, ktoré ovplyvnili výsledky?</h3>
+                    <p class="text-gray-700">V hovore sa spomenul tzv. "multiplikačný efekt" duševného vlastníctva. Úspech filmov ako *Mufasa: The Lion King* alebo hier ako *Marvel Rivals* sa neprejavuje len v tržbách z kín alebo predaja hier, ale aj v licenčných poplatkoch za spotrebiteľské produkty, čo zvyšuje ziskovosť naprieč segmentmi. Na druhej strane, ziskovosť segmentu Sports bola negatívne ovplyvnená jednorazovým odpisom súvisiacim s ukončením spoločného podniku Venu.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="share-analysis" class="bg-white p-6 md:p-8 rounded-lg shadow-md">
+            <h2 class="text-2xl font-bold text-center mb-8">Analýza počtu akcií a vplyv na akcionárov</h2>
+            <div class="max-w-3xl mx-auto">
+                <div class="qa-item">
+                    <h3 class="font-bold text-lg mb-2">Realizovala spoločnosť spätný odkup akcií?</h3>
+                    <p class="text-gray-700">Áno, Disney v tomto štvrťroku aktívne vracala kapitál akcionárom. Spoločnosť odkúpila vlastné akcie v hodnote **1 miliardy USD**. Tento krok je súčasťou väčšieho plánu na spätný odkup akcií v celkovej hodnote 3 miliardy USD počas fiškálneho roka 2025. Spätný odkup znižuje počet akcií v obehu, čím zvyšuje podiel každého zostávajúceho akcionára na vlastníctve spoločnosti a potenciálne zvyšuje zisk na akciu (EPS).</p>
+                </div>
+                <div class="qa-item">
+                    <h3 class="font-bold text-lg mb-2">Ako ovplyvnili odmeňovacie programy počet akcií?</h3>
+                    <p class="text-gray-700">Ako mnoho veľkých spoločností, aj Disney využíva akciové opcie a iné formy odmien na báze akcií na prilákanie a udržanie talentovaných zamestnancov. Tieto programy vedú k postupnému vydávaniu nových akcií, čo spôsobuje tzv. **riedenie (dilution)** – mierne znižovanie percentuálneho podielu existujúcich akcionárov. Spoločnosť výslovne uviedla, že jedným z cieľov programu spätného odkupu akcií je práve kompenzovať toto riedenie.</p>
+                </div>
+                <div class="qa-item">
+                    <h3 class="font-bold text-lg mb-2">Aký bol teda čistý efekt na počet akcií v obehu?</h3>
+                    <p class="text-gray-700">Čistým výsledkom týchto dvoch protichodných síl (spätné odkupy vs. riedenie z odmien) bol **pokles celkového počtu akcií v obehu**. K 29. marcu 2025 mala spoločnosť v obehu približne **1,814 miliardy** akcií, čo je medziročný pokles o zhruba 1,1 % z 1,834 miliardy akcií v rovnakom období minulého roka. Pre akcionárov je to pozitívna správa, pretože to znamená, že ich podiel na ziskoch a majetku spoločnosti sa mierne zvýšil.</p>
                 </div>
             </div>
         </section>
