@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="sk">
+<head>
+  <meta charset="utf-8" />
+  <title>Disney 10‑Q (Q2 FY2025) — segmenty a Sankey</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root { --bg:#0b1220; --card:#131a2a; --text:#e8eefc; --muted:#9db0d7; --accent:#5ac8fa; --ok:#2ecc71; --warn:#ffb020; --bad:#ff6b6b; }
+    html,body { margin:0; padding:0; background:var(--bg); color:var(--text); font:14px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
+    header { padding:16px 20px; border-bottom:1px solid #1f2940; position:sticky; top:0; backdrop-filter: blur(6px); background:rgba(11,18,32,0.7); }
+    h1 { margin:0 0 4px 0; font-size:20px; }
+    .meta { color:var(--muted); font-size:12px; }
+    main { padding:20px; max-width:1200px; margin:0 auto; }
+    .grid { display:grid; grid-template-columns: 1.2fr 1fr; gap:20px; }
+    .card { background:var(--card); border:1px solid #1f2940; border-radius:12px; padding:16px; }
+    h2 { margin:0 0 12px 0; font-size:16px; }
+    table { width:100%; border-collapse: collapse; }
+    th, td { padding:8px 10px; border-bottom:1px solid #223154; text-align:right; }
+    th:first-child, td:first-child { text-align:left; }
+    tfoot td { font-weight:600; }
+    .chip { display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; border:1px solid #2a395e; color:var(--muted); }
+    .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .note { color:var(--muted); font-size:12px; margin-top:6px; }
+    #sankey { width:100%; height:520px; }
+    .kpis { display:grid; grid-template-columns: repeat(4, 1fr); gap:12px; margin-top:10px; }
+    .kpi { background:linear-gradient(180deg, rgba(42,57,94,0.35), rgba(42,57,94,0.12)); border:1px solid #2a395e; border-radius:10px; padding:10px; }
+    .kpi .label { color:var(--muted); font-size:12px; }
+    .kpi .value { font-size:18px; font-weight:700; margin-top:2px; }
+    .green { color: var(--ok); }
+    .red { color: var(--bad); }
+    .legend { display:flex; gap:10px; flex-wrap:wrap; font-size:12px; color:var(--muted); }
+    .pill { padding:2px 8px; border-radius:999px; border:1px solid #2a395e; }
+    @media (max-width: 980px) { .grid { grid-template-columns: 1fr; } #sankey { height:420px; } .kpis { grid-template-columns: repeat(2, 1fr);} }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Disney 10‑Q — Q2 FY2025 (štvrťrok končiaci 29. 3. 2025)</h1>
+    <div class="meta">Segmenty, marže a Sankey • Vyplň údaje z „Segment Information“ a výsledky sa prepočítajú.</div>
+  </header>
+  <main>
+    <div class="grid">
+      <section class="card">
+        <h2>1) Vstupné údaje (vyplň sem)</h2>
+        <div class="row">
+          <span class="chip">Mena: USD</span>
+          <span class="chip" id="scaleChip">Škála: milióny</span>
+        </div>
+        <div class="note">Zadaj príjmy (Revenue) a prevádzkový zisk/stratu (Operating Income/Loss) za štvrťrok. Náklady a marže sa dopočítajú.</div>
+        <table id="inputTable">
+          <thead>
+            <tr><th>Segment</th><th>Príjmy</th><th>Prevádzkový zisk/strata</th></tr>
+          </thead>
+          <tbody>
+            <tr data-key="Entertainment"><td>Entertainment</td><td contenteditable>0</td><td contenteditable>0</td></tr>
+            <tr data-key="Sports"><td>Sports</td><td contenteditable>0</td><td contenteditable>0</td></tr>
+            <tr data-key="Experiences"><td>Experiences</td><td contenteditable>0</td><td contenteditable>0</td></tr>
+          </tbody>
+        </table>
+        <div class="note">Tip: vkladaj čísla v rovnakej škále (napr. v miliónoch USD).</div>
+        <div class="kpis" id="kpis"></div>
+      </section>
+
+      <section class="card">
+        <h2>2) Sankey — toky príjmov na náklady a zisk/stratu</h2>
+        <div class="legend">
+          <span class="pill">Revenue → Operating costs</span>
+          <span class="pill">Revenue → Operating income</span>
+          <span class="pill">Operating loss → Operating costs (ak strata)</span>
+        </div>
+        <div id="sankey"></div>
+      </section>
+    </div>
+
+    <section class="card">
+      <h2>3) Segmentové výsledky a marže</h2>
+      <table id="resultsTable">
+        <thead>
+          <tr><th>Segment</th><th>Príjmy</th><th>Prevádzkový zisk/strata</th><th>Prevádzkové náklady</th><th>Marža</th></tr>
+        </thead>
+        <tbody></tbody>
+        <tfoot>
+          <tr><td>Spolu</td><td id="totRev">0</td><td id="totOpInc">0</td><td id="totCosts">0</td><td id="totMargin">0%</td></tr>
+        </tfoot>
+      </table>
+      <div class="note">Marža = Operating Income / Revenue. Pri strate je marža záporná.</div>
+    </section>
+
+    <section class="card">
+      <h2>4) Poznámky a metodika</h2>
+      <ul>
+        <li><b>Prevádzkové náklady</b> = Príjmy − Prevádzkový zisk (pri strate sú vyššie než tržby).</li>
+        <li><b>Sankey</b> nepodporuje záporné prúdy; straty zobrazujeme ako dodatočný prúd „Operating loss → Operating costs“.</li>
+        <li><b>Zaokrúhľovanie</b>: výstupy sú formatované s oddelovačmi tisícov; používaj konzistentnú škálu.</li>
+      </ul>
+      <p class="note">Fakty o podaní: 10‑Q za štvrťrok končiaci 29. 3. 2025, podané 7. 5. 2025; akcie v obehu k 30. 4. 2025: 1,797,746,311.</p>
+    </section>
+  </main>
+
+  <!-- D3 + d3-sankey -->
+  <script src="https://unpkg.com/d3@7"></script>
+  <script src="https://unpkg.com/d3-sankey@0.12.3/dist/d3-sankey.min.js"></script>
+  <script>
+    const fmt = (n) => {
+      const sign = n < 0 ? '-' : '';
+      const abs = Math.abs(n);
+      return sign + abs.toLocaleString('en-US', { maximumFractionDigits: 2 });
+    };
+    const pct = (v) => (isFinite(v) ? (v*100).toFixed(1) + '%' : '—');
+
+    function readDataFromTable() {
+      const rows = Array.from(document.querySelectorAll('#inputTable tbody tr'));
+      const data = {};
+      rows.forEach(tr => {
+        const key = tr.getAttribute('data-key');
+        const tds = tr.querySelectorAll('td');
+        const rev = parseFloat((tds[1].innerText || '0').replace(/,/g,'')) || 0;
+        const opi = parseFloat((tds[2].innerText || '0').replace(/,/g,'')) || 0;
+        data[key] = { revenue: rev, opIncome: opi };
+      });
+      return data;
+    }
+
+    function compute(data) {
+      const segments = Object.keys(data);
+      const rows = [];
+      let totRev=0, totOI=0, totCosts=0;
+
+      segments.forEach(seg => {
+        const r = data[seg].revenue;
+        const oi = data[seg].opIncome;
+        const costs = r - oi;
+        rows.push({ segment: seg, revenue: r, opIncome: oi, costs, margin: r !== 0 ? oi/r : NaN });
+        totRev += r; totOI += oi; totCosts += costs;
+      });
+
+      return { rows, totals: { revenue: totRev, opIncome: totOI, costs: totCosts, margin: totRev!==0 ? totOI/totRev : NaN } };
+    }
+
+    function buildSankey(data) {
+      // Build nodes/links
+      const links = [];
+      const nodesSet = new Set();
+
+      function addLink(s,t,v) {
+        if (v <= 0) return;
+        links.push({ source: s, target: t, value: v });
+        nodesSet.add(s); nodesSet.add(t);
+      }
+
+      Object.entries(data).forEach(([seg, vals]) => {
+        const r = vals.revenue;
+        const oi = vals.opIncome;
+        const costs = r - oi;
+        const revNode = seg + ' revenue';
+        const costNode = seg + ' operating costs';
+        const incNode  = seg + ' operating income';
+        const lossNode = seg + ' operating loss';
+
+        if (oi >= 0) {
+          addLink(revNode, costNode, Math.max(costs,0));
+          addLink(revNode, incNode, oi);
+        } else {
+          // Show full revenue to costs, plus extra loss
+          addLink(revNode, costNode, Math.max(r,0));
+          addLink(lossNode, costNode, Math.abs(oi));
+        }
+      });
+
+      const nodes = Array.from(nodesSet).map((name, i) => ({ name }));
+
+      // Map node names to indices
+      const nameToIndex = new Map(nodes.map((n, i) => [n.name, i]));
+      const sankeyLinks = links.map(l => ({
+        source: nameToIndex.get(l.source),
+        target: nameToIndex.get(l.target),
+        value: l.value
+      }));
+
+      // Render
+      const width = document.getElementById('sankey').clientWidth;
+      const height = document.getElementById('sankey').clientHeight;
+
+      const svg = d3.select('#sankey').html('').append('svg')
+        .attr('width', width)
+        .attr('height', height);
+
+      const { sankey, sankeyLinkHorizontal } = d3;
+      const sankeyGen = d3.sankey()
+        .nodeWidth(12)
+        .nodePadding(18)
+        .extent([[8, 8], [width-8, height-8]]);
+
+      const graph = sankeyGen({
+        nodes: nodes.map(d => Object.assign({}, d)),
+        links: sankeyLinks.map(d => Object.assign({}, d))
+      });
+
+      const color = d3.scaleOrdinal()
+        .domain(nodes.map(n => n.name))
+        .range(['#5ac8fa','#2ecc71','#ffb020','#b28dff','#ff6b6b','#ffd166','#06d6a0','#118ab2','#ef476f']);
+
+      svg.append('g')
+        .attr('fill', 'none')
+        .selectAll('path')
+        .data(graph.links)
+        .join('path')
+        .attr('d', d3.sankeyLinkHorizontal())
+        .attr('stroke', d => color(d.source.name))
+        .attr('stroke-opacity', 0.35)
+        .attr('stroke-width', d => Math.max(1, d.width))
+        .on('mouseover', function() { d3.select(this).attr('stroke-opacity', 0.6); })
+        .on('mouseout', function() { d3.select(this).attr('stroke-opacity', 0.35); })
+        .append('title')
+        .text(d => `${graph.nodes[d.source.index].name} → ${graph.nodes[d.target.index].name}\nHodnota: ${fmt(d.value)}`);
+
+      const node = svg.append('g')
+        .selectAll('g')
+        .data(graph.nodes)
+        .join('g');
+
+      node.append('rect')
+        .attr('x', d => d.x0)
+        .attr('y', d => d.y0)
+        .attr('height', d => Math.max(1, d.y1 - d.y0))
+        .attr('width', d => d.x1 - d.x0)
+        .attr('fill', d => color(d.name))
+        .attr('stroke', '#1f2940');
+
+      node.append('text')
+        .attr('x', d => d.x0 < width/2 ? d.x1 + 6 : d.x0 - 6)
+        .attr('y', d => (d.y0 + d.y1)/2)
+        .attr('dy', '0.35em')
+        .attr('text-anchor', d => d.x0 < width/2 ? 'start' : 'end')
+        .attr('fill', '#e8eefc')
+        .attr('font-size', 12)
+        .text(d => d.name)
+        .append('tspan')
+        .attr('x', d => d.x0 < width/2 ? d.x1 + 6 : d.x0 - 6)
+        .attr('dy', '1.1em')
+        .attr('fill', '#9db0d7')
+        .text(d => ` ${fmt(d.value || 0)}`);
+    }
+
+    function renderTables(model) {
+      const tbody = document.querySelector('#resultsTable tbody');
+      tbody.innerHTML = '';
+      model.rows.forEach(r => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${r.segment}</td>
+          <td>${fmt(r.revenue)}</td>
+          <td class="${r.opIncome>=0?'':'red'}">${fmt(r.opIncome)}</td>
+          <td>${fmt(r.costs)}</td>
+          <td class="${r.margin>=0?'green':'red'}">${pct(r.margin)}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+      document.getElementById('totRev').textContent = fmt(model.totals.revenue);
+      document.getElementById('totOpInc').textContent = fmt(model.totals.opIncome);
+      document.getElementById('totCosts').textContent = fmt(model.totals.costs);
+      document.getElementById('totMargin').textContent = pct(model.totals.margin);
+
+      // KPIs
+      const kpis = document.getElementById('kpis');
+      kpis.innerHTML = '';
+      const items = [
+        {label:'Spolu príjmy', value: model.totals.revenue},
+        {label:'Spolu op. zisk', value: model.totals.opIncome},
+        {label:'Spolu náklady', value: model.totals.costs},
+        {label:'Celková marža', value: model.totals.margin, percent:true}
+      ];
+      items.forEach(k => {
+        const div = document.createElement('div');
+        div.className = 'kpi';
+        div.innerHTML = `
+          <div class="label">${k.label}</div>
+          <div class="value ${k.percent ? (k.value>=0?'green':'red') : ''}">
+            ${k.percent ? pct(k.value) : fmt(k.value)}
+          </div>
+        `;
+        kpis.appendChild(div);
+      });
+    }
+
+    function updateAll() {
+      const inputs = readDataFromTable();
+      const model = compute(inputs);
+      renderTables(model);
+      buildSankey(inputs);
+    }
+
+    document.getElementById('inputTable').addEventListener('input', updateAll);
+    // Initial render
+    updateAll();
+  </script>
+</body>
+</html>
