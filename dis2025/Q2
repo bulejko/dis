@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interaktívna analýza výsledkov Disney Q2 2025</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.plot.ly/plotly-2.32.0.min.js" charset="utf-8"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Harmony -->
+    <!-- Application Structure Plan: A multi-section, top-down narrative structure was chosen. It starts with high-level takeaways and the main Sankey diagram to provide an immediate overview of the financial flow. It then allows users to "drill down" into thematic sections for each business segment (Entertainment, Experiences, Sports) using an interactive tab system. This structure guides the user from the general (the full corporate story) to the specific (segment performance), making the complex report digestible. This is more effective for understanding than just presenting a single diagram, as it pairs quantitative data with the crucial qualitative insights from the report. -->
+    <!-- Visualization & Content Choices: 1. **Sankey Diagram (Plotly.js):** Goal: Show relationships/flow. This is the central request and the best tool to visualize the flow of money from revenues through costs to profit. Interaction: Hover tooltips show precise values. Justification: Directly answers the user's primary need. 2. **Bar Charts (Chart.js):** Goal: Compare components. Used within each segment's "deep dive" section to break down revenue and operating income sources (e.g., DTC vs. Linear Networks). Interaction: Standard Chart.js tooltips. Justification: Provides a clear, simple visual comparison that's easier to grasp than a table of numbers. 3. **Interactive Tabs (HTML/CSS/JS):** Goal: Organize content. Used to switch between the detailed analysis of the three main segments. Interaction: Click to reveal content. Justification: Prevents overwhelming the user with information by presenting one detailed section at a time, creating a clean and focused user experience. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FDFBF8; /* Warm off-white */
+            color: #4A4A4A;
+        }
+        .active-tab {
+            border-color: #A57C5A; /* Muted brown accent */
+            color: #A57C5A;
+            font-weight: 600;
+        }
+        .chart-container {
+            position: relative;
+            margin: auto;
+            height: 320px;
+            width: 100%;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 450px;
+            }
+        }
+        .kpi-card {
+            background-color: #FFFFFF;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+            border: 1px solid #F0EBE5;
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .kpi-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.07), 0 4px 6px -4px rgb(0 0 0 / 0.07);
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <header class="bg-white py-6 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h1 class="text-3xl md:text-4xl font-bold text-[#3D3D3D]">Finančná analýza The Walt Disney Company</h1>
+            <p class="mt-2 text-lg text-gray-600">Interaktívny prehľad výsledkov za 2. štvrťrok fiškálneho roka 2025</p>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+
+        <section id="kpi" class="mb-12">
+            <h2 class="text-2xl font-bold text-center mb-8">Kľúčové ukazovatele štvrťroka</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="kpi-card text-center">
+                    <h3 class="text-lg font-semibold text-gray-500">Celkové tržby</h3>
+                    <p class="text-4xl font-bold text-[#4A90E2] mt-2">$23.6B</p>
+                    <p class="text-sm text-gray-500 mt-1">7% medziročný nárast</p>
+                </div>
+                <div class="kpi-card text-center">
+                    <h3 class="text-lg font-semibold text-gray-500">Prevádzkový zisk segmentov</h3>
+                    <p class="text-4xl font-bold text-[#50E3C2] mt-2">$4.4B</p>
+                    <p class="text-sm text-gray-500 mt-1">15% medziročný nárast</p>
+                </div>
+                <div class="kpi-card text-center">
+                    <h3 class="text-lg font-semibold text-gray-500">Ziskovosť streamingu (DTC)</h3>
+                    <p class="text-4xl font-bold text-[#B8E986] mt-2">Prvýkrát ziskový</p>
+                    <p class="text-sm text-gray-500 mt-1">Historický míľnik</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="sankey-diagram" class="bg-white p-6 rounded-lg shadow-md mb-12">
+            <h2 class="text-2xl font-bold text-center mb-2">Tok príjmov a zisku (v mil. USD)</h2>
+            <p class="text-center text-gray-600 mb-6">Vizualizácia cesty peňazí od celkových tržieb segmentov až po zisk pred zdanením. Umiestnením kurzora na jednotlivé toky zobrazíte presné hodnoty.</p>
+            <div id="sankeyChartContainer" class="w-full h-[500px] md:h-[600px]"></div>
+        </section>
+
+        <section id="deep-dive">
+            <h2 class="text-2xl font-bold text-center mb-8">Hĺbková analýza segmentov</h2>
+            
+            <div class="border-b border-gray-200 mb-8">
+                <nav class="-mb-px flex justify-center space-x-4 md:space-x-8" aria-label="Tabs">
+                    <button data-tab="entertainment" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm md:text-base text-gray-500 hover:text-[#A57C5A] hover:border-[#A57C5A] active-tab">
+                        Entertainment
+                    </button>
+                    <button data-tab="experiences" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm md:text-base text-gray-500 hover:text-[#A57C5A] hover:border-[#A57C5A]">
+                        Experiences
+                    </button>
+                    <button data-tab="sports" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm md:text-base text-gray-500 hover:text-[#A57C5A] hover:border-[#A57C5A]">
+                        Sports
+                    </button>
+                </nav>
+            </div>
+
+            <div id="tab-content">
+                <div id="entertainment-content" class="tab-pane">
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="text-xl font-bold mb-4">Entertainment: Motor v transformácii</h3>
+                        <p class="text-gray-600 mb-6">Tento segment je najväčší z hľadiska tržieb a prechádza zásadnou zmenou, ktorú poháňa historický obrat v ziskovosti streamovacieho biznisu (DTC). Tento úspech kompenzuje očakávaný pokles v tradičných lineárnych sieťach.</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                            <div>
+                                <h4 class="font-semibold text-center mb-2">Rozdelenie prevádzkového zisku (v mil. USD)</h4>
+                                <div class="chart-container h-80">
+                                    <canvas id="entertainmentChart"></canvas>
+                                </div>
+                            </div>
+                            <div class="text-sm space-y-4">
+                                <div class="p-4 bg-gray-50 rounded-lg">
+                                    <h5 class="font-bold">Direct-to-Consumer (DTC)</h5>
+                                    <p>Po rokoch strát sa podsegment stal ziskovým, čo je výsledkom zvýšenia cien a opatrení proti zdieľaniu hesiel. Tento míľnik potvrdzuje životaschopnosť streamovacieho modelu ako budúceho piliera rastu.</p>
+                                </div>
+                                <div class="p-4 bg-gray-50 rounded-lg">
+                                    <h5 class="font-bold">Lineárne siete</h5>
+                                    <p>Pokles tržieb odráža trend rušenia káblových pripojení, no disciplinované riadenie nákladov udržuje tento podsegment ziskovým, aj keď jeho dosah klesá.</p>
+                                </div>
+                                 <div class="p-4 bg-gray-50 rounded-lg">
+                                    <h5 class="font-bold">Predaj obsahu / Licencovanie</h5>
+                                    <p>Výkonnosť je poháňaná úspechom filmových premiér a licenčných dohôd, čo demonštruje silu duševného vlastníctva Disney naprieč platformami.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="experiences-content" class="tab-pane hidden">
+                     <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="text-xl font-bold mb-4">Experiences: Domáca sila a finančný základ</h3>
+                        <p class="text-gray-600 mb-6">Najziskovejší segment spoločnosti, ktorý slúži ako finančná chrbtica a umožňuje investície do transformácie ostatných divízií. Jeho úspech je takmer výlučne poháňaný odolným americkým trhom.</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                            <div>
+                                <h4 class="font-semibold text-center mb-2">Zdroje prevádzkového zisku (v mil. USD)</h4>
+                                <div class="chart-container h-80">
+                                    <canvas id="experiencesChart"></canvas>
+                                </div>
+                            </div>
+                            <div class="text-sm space-y-4">
+                                <div class="p-4 bg-gray-50 rounded-lg">
+                                    <h5 class="font-bold">Domáce parky a zážitky</h5>
+                                    <p>Výrazný rast zisku bol poháňaný vyššou návštevnosťou, zvýšenými výdavkami návštevníkov a rastom v Disney Vacation Club a na výletných lodiach.</p>
+                                </div>
+                                <div class="p-4 bg-gray-50 rounded-lg">
+                                    <h5 class="font-bold">Medzinárodné parky a zážitky</h5>
+                                    <p>V ostrom kontraste tu zisk klesol, najmä v dôsledku slabšej návštevnosti a vyšších nákladov v parkoch v Šanghaji a Hongkongu, čo odráža zmäkčenie čínskeho trhu.</p>
+                                </div>
+                                 <div class="p-4 bg-gray-50 rounded-lg">
+                                    <h5 class="font-bold">Spotrebiteľské produkty</h5>
+                                    <p>Zisk rástol vďaka vyšším licenčným príjmom, čo opäť potvrdzuje hodnotu silných značiek a duševného vlastníctva spoločnosti.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="sports-content" class="tab-pane hidden">
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="text-xl font-bold mb-4">Sports: Dilema vysokých nákladov</h3>
+                        <p class="text-gray-600 mb-6">Segment čelí zásadnej výzve: rastúce tržby sú pohlcované ešte rýchlejšie rastúcimi nákladmi na vysielacie práva. To vytvára tlak na marže a núti spoločnosť hľadať nové zdroje príjmov, ako je pripravovaná streamovacia služba ESPN.</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                            <div>
+                               <h4 class="font-semibold text-center mb-2">Vývoj tržieb a zisku (v mil. USD)</h4>
+                                <div class="chart-container h-80">
+                                    <canvas id="sportsChart"></canvas>
+                                </div>
+                            </div>
+                            <div class="text-sm space-y-4">
+                                <div class="p-4 bg-gray-50 rounded-lg">
+                                    <h5 class="font-bold">Pohonné sily tržieb</h5>
+                                    <p>Rast bol spôsobený silným výkonom domácej siete ESPN, najmä vďaka odvysielaniu dodatočných zápasov play-off vysokoškolského futbalu a NFL, čo viedlo k vyšším príjmom z reklamy.</p>
+                                </div>
+                                <div class="p-4 bg-gray-50 rounded-lg">
+                                    <h5 class="font-bold">Tlaky na strane nákladov</h5>
+                                    <p>Pokles prevádzkového zisku bol priamym dôsledkom vyšších nákladov na program a produkciu spojených s tými istými zápasmi, ktoré generovali vyššie tržby. To odhaľuje neudržateľnú nákladovú štruktúru.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-white mt-12 py-6 border-t border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-gray-500 text-sm">
+            <p>&copy; 2025 Interaktívna vizualizácia. Dáta pochádzajú z verejne dostupnej finančnej správy The Walt Disney Company za Q2 FY2025.</p>
+            <p>Vytvorené ako demonštrácia interaktívnej analýzy dát.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            
+            const sankeyData = {
+                source: [0, 0, 1, 1, 2, 2, 3, 4, 5, 6, 6],
+                target: [3, 7, 4, 8, 5, 9, 6, 6, 6, 10, 11],
+                value: [1258, 9424, 687, 3847, 2491, 6398, 1258, 687, 2491, 3087, 1349],
+                label: [
+                    "Tržby Entertainment", "Tržby Sports", "Tržby Experiences",
+                    "Entertainment OI", "Sports OI", "Experiences OI",
+                    "Celkový prevádzkový zisk segmentov",
+                    "Náklady Entertainment", "Náklady Sports", "Náklady Experiences",
+                    "Zisk pred zdanením", "Korporátne a nealokované náklady"
+                ],
+                color: {
+                    node: [
+                        '#4A90E2', '#F5A623', '#7ED321', // Revenues
+                        '#8AB7E9', '#F9C97F', '#B8E986', // OIs
+                        '#50E3C2', // Total Segment OI
+                        '#BDD7F0', '#FCE2B3', '#E1F5C4', // Costs
+                        '#276419', '#D95F02' // Final Profit/Costs
+                    ],
+                    link: [
+                        'rgba(74, 144, 226, 0.4)', 'rgba(74, 144, 226, 0.4)',
+                        'rgba(245, 166, 35, 0.4)', 'rgba(245, 166, 35, 0.4)',
+                        'rgba(126, 211, 33, 0.4)', 'rgba(126, 211, 33, 0.4)',
+                        'rgba(138, 183, 233, 0.6)', 'rgba(249, 201, 127, 0.6)', 'rgba(184, 233, 134, 0.6)',
+                        'rgba(80, 227, 194, 0.7)', 'rgba(80, 227, 194, 0.7)'
+                    ]
+                }
+            };
+
+            const sankeyLayout = {
+                title: '',
+                font: {
+                    family: 'Inter, sans-serif',
+                    size: 12,
+                    color: '#4A4A4A'
+                },
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                margin: { l: 20, r: 20, b: 20, t: 20 },
+            };
+
+            Plotly.newPlot('sankeyChartContainer', [{
+                type: 'sankey',
+                orientation: 'h',
+                node: {
+                    pad: 20,
+                    thickness: 25,
+                    line: {
+                        color: 'black',
+                        width: 0.5
+                    },
+                    label: sankeyData.label,
+                    color: sankeyData.color.node,
+                    hovertemplate: '%{label}<extra></extra>'
+                },
+                link: {
+                    source: sankeyData.source,
+                    target: sankeyData.target,
+                    value: sankeyData.value,
+                    color: sankeyData.color.link,
+                    hovertemplate: 'Hodnota: %{value:,.0f} mil. USD<extra></extra>'
+                }
+            }], sankeyLayout, {responsive: true});
+            
+            const entertainmentData = {
+                labels: ['Lineárne siete', 'Direct-to-Consumer (DTC)', 'Predaj obsahu/Licencovanie'],
+                datasets: [{
+                    label: 'Prevádzkový zisk (v mil. USD)',
+                    data: [769, 336, 153],
+                    backgroundColor: ['#4A90E2', '#B8E986', '#F5A623'],
+                    borderColor: ['#4A90E2', '#B8E986', '#F5A623'],
+                    borderWidth: 1
+                }]
+            };
+
+            const experiencesData = {
+                labels: ['Domáce parky', 'Medzinárodné parky', 'Spotrebiteľské produkty'],
+                datasets: [{
+                    label: 'Prevádzkový zisk (v mil. USD)',
+                    data: [1800, 225, 400],
+                    backgroundColor: ['#7ED321', '#4A90E2', '#F5A623'],
+                     borderColor: ['#7ED321', '#4A90E2', '#F5A623'],
+                    borderWidth: 1
+                }]
+            };
+
+            const sportsData = {
+                labels: ['Tržby', 'Prevádzkový zisk'],
+                datasets: [{
+                    label: '2. štvrťrok FY2025 (v mil. USD)',
+                    data: [4534, 687],
+                    backgroundColor: ['#4A90E2', '#50E3C2'],
+                    borderColor: ['#4A90E2', '#50E3C2'],
+                    borderWidth: 1
+                }]
+            };
+            
+            const chartOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: '#e5e7eb'
+                        },
+                        ticks: {
+                           font: { family: "'Inter', sans-serif" }
+                        }
+                    },
+                    x: {
+                         grid: {
+                            display: false
+                        },
+                        ticks: {
+                           font: { family: "'Inter', sans-serif" }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        enabled: true,
+                        backgroundColor: '#333',
+                        titleFont: { family: "'Inter', sans-serif" },
+                        bodyFont: { family: "'Inter', sans-serif" },
+                    }
+                }
+            };
+            
+            let entertainmentChart, experiencesChart, sportsChart;
+
+            function renderCharts() {
+                if (document.getElementById('entertainment-content').offsetParent !== null) {
+                    if (!entertainmentChart) {
+                        entertainmentChart = new Chart(document.getElementById('entertainmentChart'), { type: 'bar', data: entertainmentData, options: chartOptions });
+                    }
+                }
+                if (document.getElementById('experiences-content').offsetParent !== null) {
+                     if (!experiencesChart) {
+                        experiencesChart = new Chart(document.getElementById('experiencesChart'), { type: 'bar', data: experiencesData, options: chartOptions });
+                    }
+                }
+                if (document.getElementById('sports-content').offsetParent !== null) {
+                    if (!sportsChart) {
+                        sportsChart = new Chart(document.getElementById('sportsChart'), { type: 'bar', data: sportsData, options: chartOptions });
+                    }
+                }
+            }
+
+            const tabs = document.querySelectorAll('.tab-button');
+            const panes = document.querySelectorAll('.tab-pane');
+
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    tabs.forEach(item => item.classList.remove('active-tab'));
+                    tab.classList.add('active-tab');
+
+                    panes.forEach(pane => pane.classList.add('hidden'));
+                    const activePane = document.getElementById(tab.dataset.tab + '-content');
+                    activePane.classList.remove('hidden');
+                    
+                    // Ensure charts are rendered when tab becomes visible
+                    renderCharts();
+                });
+            });
+
+            // Initial render
+            renderCharts();
+        });
+    </script>
+</body>
+</html>
