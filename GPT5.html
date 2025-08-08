@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { Sankey, Tooltip, ResponsiveContainer } from "recharts";
+import Plot from "react-plotly.js";
 
 // --- Vstupné údaje (USD mil.) – Q2 FY2025 (štvrťrok končiaci 29.3.2025)
 // Zdroj: Form 10-Q (Segment Information) + poznámky o akciách a buybackoch
@@ -51,20 +51,21 @@ export default function App() {
     });
   }, []);
 
-  const sankey = useMemo(() => {
-    // Nodes: pre každý segment (Revenue), plus Opex a OpIncome ciele
-    const nodes: { name: string }[] = [];
-    const links: { source: number; target: number; value: number }[] = [];
+  const sankeyData = useMemo(() => {
+    const labels: string[] = [];
+    const source: number[] = [];
+    const target: number[] = [];
+    const value: number[] = [];
 
     rows.forEach((r) => {
-      const src = nodes.push({ name: `${r.key} revenue` }) - 1;
-      const tgtOpex = nodes.push({ name: `${r.key} operating costs` }) - 1;
-      const tgtOI = nodes.push({ name: `${r.key} operating income` }) - 1;
-      links.push({ source: src, target: tgtOpex, value: r.opex });
-      links.push({ source: src, target: tgtOI, value: r.opIncome });
+      const revIdx = labels.push(`${r.key} revenue`) - 1;
+      const opexIdx = labels.push(`${r.key} operating costs`) - 1;
+      const oiIdx = labels.push(`${r.key} operating income`) - 1;
+      source.push(revIdx); target.push(opexIdx); value.push(r.opex);
+      source.push(revIdx); target.push(oiIdx); value.push(r.opIncome);
     });
 
-    return { nodes, links };
+    return { labels, source, target, value };
   }, [rows]);
 
   const total = useMemo(() => {
@@ -124,22 +125,35 @@ export default function App() {
       </section>
 
       {/* Sankey diagram */}
-      <section className="bg-white rounded-2xl shadow p-4">
-        <h2 className="text-lg font-semibold mb-2">Tok príjmov → náklady vs. prevádzkový zisk (Sankey)</h2>
-        <div className="w-full h-[420px]">
-          <ResponsiveContainer>
-            <Sankey
-              width={900}
-              height={420}
-              data={sankey}
-              nodePadding={30}
-              margin={{ left: 10, right: 10, top: 10, bottom: 10 }}
-            >
-              <Tooltip />
-            </Sankey>
-          </ResponsiveContainer>
+      <section className=\"bg-white rounded-2xl shadow p-4\">
+        <h2 className=\"text-lg font-semibold mb-2\">Tok príjmov → náklady vs. prevádzkový zisk (Sankey – Plotly)</h2>
+        <div className=\"w-full h-[420px]\">
+          <Plot
+            data={[{
+              type: 'sankey',
+              orientation: 'h',
+              node: {
+                label: sankeyData.labels,
+                pad: 20,
+                thickness: 20
+              },
+              link: {
+                source: sankeyData.source,
+                target: sankeyData.target,
+                value: sankeyData.value
+              }
+            }]}
+            layout={{
+              autosize: true,
+              height: 420,
+              margin: { l: 10, r: 10, t: 10, b: 10 }
+            }}
+            config={{ responsive: true }}
+            useResizeHandler
+            style={{ width: '100%', height: '420px' }}
+          />
         </div>
-        <p className="text-xs opacity-60 mt-2">Pozn.: Segmentové tržby obsahujú intersegmenty; konsolidované tržby sú po elimináciách.</p>
+        <p className=\"text-xs opacity-60 mt-2\">Pozn.: Segmentové tržby obsahujú intersegmenty; konsolidované tržby sú po elimináciách.</p>
       </section>
 
       {/* Tabuľka segmentov */}
